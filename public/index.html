@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timed Algebra Quiz Challenge</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #4f46e5 0%, #1e3a8a 100%);
+            min-height: 100vh;
+        }
+        .leaderboard-item:nth-child(1) { --tw-bg-opacity: 1; background-color: rgba(253, 224, 71, var(--tw-bg-opacity)); } /* Gold for 1st */
+        .leaderboard-item:nth-child(2) { --tw-bg-opacity: 1; background-color: rgba(203, 213, 225, var(--tw-bg-opacity)); } /* Silver for 2nd */
+        .leaderboard-item:nth-child(3) { --tw-bg-opacity: 1; background-color: rgba(251, 191, 36, var(--tw-bg-opacity)); } /* Bronze for 3rd */
+        #leaderboardContainer::-webkit-scrollbar { width: 8px; }
+        #leaderboardContainer::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 text-gray-800 flex justify-center items-center">
+
+    <!-- Global Feedback Message -->
+    <div id="feedbackMessage" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-6 text-2xl font-extrabold text-white rounded-xl shadow-2xl z-50 transition-all duration-300 opacity-0 pointer-events-none text-center" style="min-width: 300px;">
+        <!-- Message content goes here -->
+    </div>
+    
+    <!-- Winner Celebration Modal (Hidden by default) -->
+    <div id="winnerModal" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg text-center transform scale-90 transition-transform duration-300">
+            <h3 class="text-4xl font-extrabold text-yellow-600 mb-6">🏆 Current Leaders! 🏆</h3>
+            <div id="podiumList" class="space-y-4">
+                <!-- Winners will be injected here -->
+            </div>
+            <button id="closeWinnerModal" class="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200">
+                Acknowledge and Continue
+            </button>
+        </div>
+    </div>
+
+
+    <div class="w-full max-w-6xl space-y-6">
+        
+        <!-- Header & Player Count -->
+        <header class="bg-white p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-center ring-4 ring-yellow-400">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-indigo-700 tracking-tight">
+                <span class="text-yellow-600">⏱️</span> 10-Question Algebra Challenge
+            </h1>
+            <div class="mt-4 sm:mt-0">
+                <span class="inline-flex items-center rounded-full bg-indigo-100 px-4 py-1 text-lg font-medium text-indigo-800 ring-2 ring-indigo-500">
+                    Total Players: <span id="activePlayerCount" class="ml-2 font-bold">0</span>
+                </span>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Game/Quiz Area -->
+            <div id="gameArea" class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-xl ring-4 ring-indigo-300">
+                
+                <!-- 1. Name Entry Screen -->
+                <div id="nameEntry" class="space-y-6 p-4">
+                    <h2 class="text-3xl font-bold text-gray-700">Ready to Compete?</h2>
+                    <p class="text-gray-500">Answer 10 questions as fast as you can. Total score: 100 points.</p>
+                    <input type="text" id="playerNameInput" placeholder="Your Competition Name" class="w-full p-3 border-2 border-indigo-400 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg">
+                    <button id="startGameButton" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md transform hover:scale-[1.01]">
+                        Start Challenge!
+                    </button>
+                </div>
+
+                <!-- 2. Quiz Screen -->
+                <div id="quizContainer" class="hidden space-y-8">
+                    <h2 class="text-2xl font-semibold text-indigo-600">
+                        <span id="questionCounter" class="text-indigo-800 font-extrabold">Q1/10</span> for <span id="currentPlayerName" class="font-bold"></span>
+                    </h2>
+
+                    <!-- Score and Timer -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center text-xl font-medium p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                        <span class="text-gray-600">Current Score: <span id="myScore" class="text-indigo-700 font-bold">0 / 100</span></span>
+                        <span class="text-gray-600 sm:mt-0 mt-2">Time Left: <span id="timer" class="text-red-600 font-bold">60s</span></span>
+                    </div>
+
+                    <!-- Question Display -->
+                    <div class="bg-indigo-100 p-6 rounded-xl border-4 border-indigo-400">
+                        <p class="text-3xl font-extrabold text-gray-800 text-center" id="questionDisplay">Loading question...</p>
+                    </div>
+
+                    <!-- Answer Input -->
+                    <div class="space-y-4">
+                        <input type="number" id="answerInput" placeholder="Enter your answer (X)" class="w-full p-4 border-4 border-gray-300 rounded-xl text-2xl focus:border-indigo-500 focus:ring-indigo-500" required>
+                        <button id="submitAnswerButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition duration-200 shadow-lg transform hover:scale-[1.01]">
+                            Submit Answer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Game Over Screen -->
+                <div id="gameOverScreen" class="hidden text-center p-8 space-y-6">
+                    <h2 class="text-4xl font-extrabold text-green-600">CHALLENGE COMPLETE! 🎉</h2>
+                    <p class="text-xl text-gray-600">You have completed all 10 questions.</p>
+                    <div class="bg-green-50 p-6 rounded-xl border-4 border-green-300 inline-block shadow-lg">
+                        <p class="text-2xl font-bold text-gray-800">Final Score: <span id="finalScore" class="text-green-700 text-3xl"></span></p>
+                        <p class="text-2xl font-bold text-gray-800 mt-2">Total Time: <span id="finalTime" class="text-indigo-700 text-3xl"></span></p>
+                    </div>
+                    <p class="text-gray-500">Check the leaderboard to see your rank!</p>
+                    <!-- NEW: Play Again Button -->
+                    <button id="playAgainButton" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 mt-4 shadow-md transform hover:scale-[1.01]">
+                        Play Again (New Questions)
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Leaderboard Area -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-xl ring-4 ring-yellow-300 h-full">
+                <h2 class="text-2xl font-bold text-gray-700 mb-4 flex items-center">
+                    <span class="text-yellow-500 mr-2">⭐</span> Live Leaderboard
+                </h2>
+                <div id="leaderboardContainer" class="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                    <p class="text-gray-400 text-center py-4">Waiting for players...</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Socket.IO Client Library -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // DOM Elements
+        const nameEntry = document.getElementById('nameEntry');
+        const quizContainer = document.getElementById('quizContainer');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startGameButton = document.getElementById('startGameButton');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const currentPlayerNameEl = document.getElementById('currentPlayerName');
+        const questionDisplay = document.getElementById('questionDisplay');
+        const answerInput = document.getElementById('answerInput');
+        const submitAnswerButton = document.getElementById('submitAnswerButton');
+        const leaderboardContainer = document.getElementById('leaderboardContainer');
+        const myScoreEl = document.getElementById('myScore');
+        const timerEl = document.getElementById('timer');
+        const activePlayerCountEl = document.getElementById('activePlayerCount');
+        const feedbackMessageEl = document.getElementById('feedbackMessage');
+        const questionCounterEl = document.getElementById('questionCounter');
+        const finalScoreEl = document.getElementById('finalScore');
+        const finalTimeEl = document.getElementById('finalTime');
+        const winnerModal = document.getElementById('winnerModal');
+        const podiumList = document.getElementById('podiumList');
+        const closeWinnerModalButton = document.getElementById('closeWinnerModal');
+        const playAgainButton = document.getElementById('playAgainButton'); // NEW
+
+        let currentQuestion = null;
+        const socket = io();
+        
+        // Modal close handler
+        closeWinnerModalButton.addEventListener('click', () => {
+             winnerModal.classList.add('opacity-0');
+             setTimeout(() => winnerModal.classList.add('hidden'), 300);
+        });
+        
+        // NEW: Restart handler
+        playAgainButton.addEventListener('click', () => {
+            restartGame();
+        });
+
+        function restartGame() {
+            // Reset client-side state
+            currentQuestion = null;
+            answerInput.value = '';
+            myScoreEl.textContent = '0 / 100';
+            timerEl.textContent = '60s';
+            
+            // Hide game over and quiz, show name entry
+            gameOverScreen.classList.add('hidden');
+            quizContainer.classList.add('hidden');
+            nameEntry.classList.remove('hidden');
+            
+            // Note: The next time the user clicks 'Start Challenge', the existing
+            // playerNameInput value will be used, and a new 'joinGame' request
+            // will be sent to the server to reset the game state there.
+        }
+
+        // --- Core Game Logic ---
+
+        startGameButton.addEventListener('click', () => {
+            const playerName = playerNameInput.value.trim();
+            if (playerName) {
+                // Transition screens
+                nameEntry.classList.add('hidden');
+                quizContainer.classList.remove('hidden');
+                gameOverScreen.classList.add('hidden'); // Ensure game over screen is hidden
+                currentPlayerNameEl.textContent = playerName;
+                
+                // Tell the server a new player has joined (or rejoined)
+                socket.emit('joinGame', playerName);
+            }
+        });
+
+        submitAnswerButton.addEventListener('click', () => {
+            const answer = parseInt(answerInput.value, 10);
+            if (!isNaN(answer) && currentQuestion) {
+                socket.emit('submitAnswer', {
+                    questionId: currentQuestion.id,
+                    answer: answer
+                });
+                answerInput.value = '';
+                submitAnswerButton.disabled = true;
+                submitAnswerButton.textContent = 'Awaiting Feedback...';
+            }
+        });
+
+        // --- Socket Event Handlers ---
+
+        // 1. Receive New Question from Server
+        socket.on('newQuestion', (question) => {
+            currentQuestion = question;
+            questionCounterEl.textContent = `Q${question.index}/${question.total}`;
+            questionDisplay.textContent = `What is X if ${question.text}?`;
+            
+            answerInput.disabled = false;
+            submitAnswerButton.disabled = false;
+            submitAnswerButton.textContent = 'Submit Answer';
+        });
+
+        // 2. Update Leaderboard
+        socket.on('updateLeaderboard', (players) => {
+            leaderboardContainer.innerHTML = '';
+            
+            if (players.length === 0) {
+                leaderboardContainer.innerHTML = '<p class="text-gray-400 text-center py-4">Waiting for players...</p>';
+                return;
+            }
+
+            players.forEach((player, index) => {
+                const isMe = player.id === socket.id;
+                
+                const item = document.createElement('div');
+                item.className = `leaderboard-item p-3 rounded-xl shadow-md flex justify-between items-center text-sm font-semibold transition-all duration-300 ${isMe ? 'ring-4 ring-red-500 scale-[1.02] text-white' : 'bg-gray-50'}`;
+                
+                // Apply specific colors for top 3
+                if (index === 0) item.classList.add('bg-yellow-400', 'text-gray-800');
+                if (index === 1) item.classList.add('bg-gray-300', 'text-gray-800');
+                if (index === 2) item.classList.add('bg-orange-300', 'text-gray-800');
+                if (index >= 3 && !isMe) item.classList.add('bg-white');
+
+                item.innerHTML = `
+                    <span class="w-1/12 font-extrabold">${index + 1}.</span>
+                    <span class="w-4/12 truncate ${isMe ? 'font-extrabold' : ''}">${player.name} ${isMe ? '(You)' : ''}</span>
+                    <span class="w-3/12 text-center font-bold">${player.status}</span>
+                    <span class="w-3/12 text-right font-extrabold">${player.score}</span>
+                `;
+                leaderboardContainer.appendChild(item);
+
+                if (isMe) {
+                    myScoreEl.textContent = `${player.score} / 100`;
+                }
+            });
+        });
+
+        // 3. Receive Answer Feedback
+        socket.on('answerFeedback', (data) => {
+            submitAnswerButton.disabled = true;
+            answerInput.disabled = true;
+            
+            const isCorrect = data.isCorrect;
+            let messageText = isCorrect ? '✅ CORRECT! (+10 Points)' : '❌ INCORRECT.';
+
+            if (!isCorrect && data.reason === 'Time up!') {
+                messageText = '⏰ TIME EXPIRED. (0 Points)';
+            }
+            
+            if (!isCorrect) {
+                 messageText += `<br>Correct Answer: X = <span class="text-yellow-300">${data.correctAnswer}</span>`;
+            }
+
+            feedbackMessageEl.innerHTML = messageText;
+            
+            feedbackMessageEl.classList.remove('opacity-0', 'bg-red-600', 'bg-green-600');
+            feedbackMessageEl.classList.add(isCorrect ? 'bg-green-600' : 'bg-red-600', 'opacity-100');
+
+            setTimeout(() => {
+                feedbackMessageEl.classList.remove('opacity-100');
+                feedbackMessageEl.classList.add('opacity-0');
+            }, isCorrect ? 1000 : 2000); 
+        });
+
+        // 4. Update Timer
+        socket.on('updateTimer', (timeLeft) => {
+            timerEl.textContent = `${timeLeft}s`;
+            if (timeLeft <= 10) { 
+                timerEl.classList.add('text-red-700', 'animate-pulse');
+            } else {
+                timerEl.classList.remove('text-red-700', 'animate-pulse');
+            }
+        });
+
+        // 5. Update Total Player Count
+        socket.on('playerCount', (count) => {
+            activePlayerCountEl.textContent = count;
+        });
+
+        // 6. Game Over Handler
+        socket.on('gameOver', (results) => {
+            // Note: The server has already broadcast the final leaderboard state before this event.
+            quizContainer.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden');
+            
+            finalScoreEl.textContent = `${results.score} / 100`;
+            finalTimeEl.textContent = results.totalTime;
+        });
+        
+        // 7. Winner Notification Handler
+        socket.on('winnerNotification', (finishedPlayers) => {
+            podiumList.innerHTML = ''; 
+            
+            if (finishedPlayers.length === 0) return; 
+
+            const totalPlayers = parseInt(activePlayerCountEl.textContent, 10);
+
+            // Logic to celebrate 1st, 2nd, 3rd only if total players > 2
+            // If total players <= 2, we only celebrate 1st place
+            let placesToCelebrate = finishedPlayers.length;
+            if (totalPlayers > 2) {
+                placesToCelebrate = Math.min(finishedPlayers.length, 3);
+            } else {
+                 placesToCelebrate = 1; // Only celebrate the 1st place if there are 2 or fewer players
+            }
+            
+            const title = placesToCelebrate > 2 ? '🏆 Top 3 Leaders! 🏆' : (placesToCelebrate === 2 ? '🥇 Top 2 Leaders! 🥈' : '👑 Current Champion! 👑');
+            
+            document.querySelector('#winnerModal h3').innerHTML = title;
+            
+            finishedPlayers.slice(0, placesToCelebrate).forEach((winner, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                let rankText = '';
+
+                switch(rank) {
+                    case 1:
+                        rankClass = 'bg-yellow-100 border-yellow-500 text-yellow-800 text-2xl font-black';
+                        rankText = '🥇 1st Place';
+                        break;
+                    case 2:
+                        rankClass = 'bg-gray-100 border-gray-400 text-gray-700 text-xl font-bold';
+                        rankText = '🥈 2nd Place';
+                        break;
+                    case 3:
+                        rankClass = 'bg-amber-100 border-amber-500 text-amber-700 text-lg font-semibold';
+                        rankText = '🥉 3rd Place';
+                        break;
+                    default:
+                        return;
+                }
+
+                const item = document.createElement('div');
+                item.className = `${rankClass} p-4 rounded-xl border-4 shadow-lg flex flex-col sm:flex-row justify-between items-center`;
+                item.innerHTML = `
+                    <span class="w-full sm:w-1/3 text-left">${rankText}</span>
+                    <span class="w-full sm:w-1/3 truncate text-center">${winner.name}</span>
+                    <span class="w-full sm:w-1/3 text-right text-base mt-2 sm:mt-0">Score: ${winner.score} / Time: ${winner.time}</span>
+                `;
+                podiumList.appendChild(item);
+            });
+
+            winnerModal.classList.remove('hidden');
+            setTimeout(() => winnerModal.classList.remove('opacity-0'), 10);
+        });
+
+    </script>
+</body>
+</html>
