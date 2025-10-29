@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "repository": {
     "type": "git",
@@ -17,9 +19,12 @@
   "bugs": {
     "url": "https://github.com/Scribble-Works/Algebra_b7/issues"
   },
-  "homepage": "https://github.com/Scribble-Works/Algebra_b7#readme",
+  "homepage": "https://scribble-works.github.io/Algebra_b7/",
   "dependencies": {
     "express": "^5.1.0",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
   }
 }
